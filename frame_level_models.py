@@ -263,7 +263,7 @@ class TCNModel(models.BaseModel):
     bn_params = {'center':True, 'scale':True, 'is_training':is_training}
     
     def TCNBlock(inputs, out_channels, kernel_size, dilation, dropout=keep_prob, is_training=is_training, **unused_params):
-      pad_tensor = tf.constant([[0, 0], [0, (kernel_size -1)*dilation], [0, 0]]) #pad for causality
+      pad_tensor = tf.constant([[0, 0], [(kernel_size -1)*dilation, (kernel_size -1)*dilation], [0, 0]]) #pad for causality
       pad1 = tf.pad(inputs, pad_tensor, name='pad1')
       conv1 = layers.conv2d(pad1, out_channels, kernel_size, data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
@@ -279,12 +279,10 @@ class TCNModel(models.BaseModel):
       res = layers.conv2d(inputs, out_channels, 1) if inputs.shape[-1] != out_channels else inputs
       return tf.nn.relu(tf.add(dropout2, res))
 
-    tcn_params = [[hidden_size, kernel_size, 2 ** i] for i in range(number_of_layers)]
+    tcn_params = [[hidden_size*(i // 2), kernel_size, 2 ** i] for i in range(number_of_layers)]
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
-
-    print(tcn_out.shape)
-    fc_in = layers.flatten(tcn_out)
-    fc_out = layers.fully_connected(fc_in, vocab_size, tf.sigmoid, batch_norm, bn_params)
+    tcn_pooled = tf.layers.average_pooling1d(tcn_out, tcn_out.shape[-2], strides=1, name='tcn_pool')
+    fc_out = layers.fully_connected(tf.squeeze(tcn_pooled), vocab_size, tf.sigmoid, batch_norm, bn_params)
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
     return aggregated_model().create_model(
