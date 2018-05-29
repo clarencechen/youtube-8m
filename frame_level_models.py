@@ -259,7 +259,6 @@ class TCNModel(models.BaseModel):
     hidden_size = 1024 or FLAGS.tcn_layer_width
     keep_prob = 0.9 or 1 -FLAGS.tcn_dropout_prob
     
-    num_inputs = model_input.shape[-1]
     bn_params = {'center':True, 'scale':True, 'is_training':is_training}
     
     def TCNBlock(inputs, out_channels, kernel_size, dilation, dropout=keep_prob, is_training=is_training, **unused_params):
@@ -281,8 +280,7 @@ class TCNModel(models.BaseModel):
 
     tcn_params = [[hidden_size*(2 ** (i // 2)), kernel_size, 2 ** i] for i in range(number_of_layers)]
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
-    print(tcn_out.shape[-2])
-    tcn_pooled = tf.layers.average_pooling1d(tcn_out, pool_size=tcn_out.shape[-2], strides=1, name='tcn_pool')
+    tcn_pooled = tf.layers.average_pooling1d(tcn_out, pool_size=inputs.shape[-2], strides=1, name='tcn_pool')
     fc_out = layers.fully_connected(tf.squeeze(tcn_pooled), vocab_size, tf.sigmoid, batch_norm, bn_params)
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
