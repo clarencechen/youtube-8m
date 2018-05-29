@@ -50,7 +50,7 @@ flags.DEFINE_integer("lstm_layers", 2, "Number of LSTM layers.")
 flags.DEFINE_integer("tcn_layer_width", 1024, "Number of features per time step in TCN.")
 flags.DEFINE_integer("tcn_layers", 9, "Number of residual blocks in TCN.")
 flags.DEFINE_integer("tcn_kernel", 3, "Width of TCN kernel.")
-flags.DEFINE_integer("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
+flags.DEFINE_float("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
 
 class FrameLevelLogisticModel(models.BaseModel):
 
@@ -263,7 +263,7 @@ class TCNModel(models.BaseModel):
     
     def TCNBlock(inputs, out_channels, kernel_size, dilation, padding='SAME', dropout=keep_prob, is_training=is_training):
       bn_params = {'center':True, 'scale':True, 'is_training':is_training, 'scope':'tcn_bn'}
-      
+
       conv1 = layers.convolution(inputs, out_channels, kernel_size, stride=1, padding=padding, rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params, scope='conv1')
       dropout1 = layers.dropout(conv1[:, :, :-(kernel_size -1)*dilation], 
