@@ -268,12 +268,12 @@ class TCNModel(models.BaseModel):
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params, scope='conv1')
       dropout1 = layers.dropout(conv1[:, :, :-(kernel_size -2)*dilation], 
         keep_prob=keep_prob, is_training=is_training, scope='dropout1')
-
+      print(dropout1.shape)
       conv2 = layers.conv2d(dropout1, out_channels, kernel_size, stride=1, padding=padding, rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params, scope='conv2')
       dropout2 = layers.dropout(conv2[:, :, :-(kernel_size -2)*dilation], 
         keep_prob=keep_prob, is_training=is_training, scope='dropout2')
-
+      print(dropout2.shape)
       res = layers.conv2d(inputs, out_channels, 1, scope='conv_resid') if inputs.shape[-1] != out_channels else inputs
       return tf.nn.relu(tf.add(dropout2, res))
 
