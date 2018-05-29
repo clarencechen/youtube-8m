@@ -279,7 +279,7 @@ class TCNModel(models.BaseModel):
       res = layers.conv2d(inputs, out_channels, 1) if inputs.shape[-1] != out_channels else inputs
       return tf.nn.relu(tf.add(dropout2, res))
 
-    tcn_params = [[hidden_size*(i // 2), kernel_size, 2 ** i] for i in range(number_of_layers)]
+    tcn_params = [[hidden_size*(2 ** (i // 2)), kernel_size, 2 ** i] for i in range(number_of_layers)]
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
     tcn_pooled = tf.layers.average_pooling1d(tcn_out, tcn_out.shape[-2], strides=1, name='tcn_pool')
     fc_out = layers.fully_connected(tf.squeeze(tcn_pooled), vocab_size, tf.sigmoid, batch_norm, bn_params)
