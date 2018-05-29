@@ -283,6 +283,7 @@ class TCNModel(models.BaseModel):
     tcn_params = [[hidden_size, kernel_size, 2 ** i] for i in range(number_of_layers)]
 
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
+    print(model_input.shape)
     print(tcn_out.shape)
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
