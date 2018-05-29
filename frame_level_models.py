@@ -254,17 +254,16 @@ class TCNModel(models.BaseModel):
       model in the 'predictions' key. The dimensions of the tensor are
       'batch_size' x 'num_classes'.
     """
-    number_of_layers = 8 or FLAGS.tcn_layers
+    number_of_layers = 6 or FLAGS.tcn_layers
     kernel_size = 3 or FLAGS.tcn_kernel
     hidden_size = 1024 or FLAGS.tcn_layer_width
     keep_prob = 0.9 or 1 -FLAGS.tcn_dropout_prob
     
     num_inputs = model_input.shape[-1]
+    bn_params = {'center':True, 'scale':True, 'is_training':is_training}
     
     def TCNBlock(inputs, out_channels, kernel_size, dilation, dropout=keep_prob, is_training=is_training, **unused_params):
-      bn_params = {'center':True, 'scale':True, 'is_training':is_training}
-      pad_tensor = tf.constant([[0, 0], [(kernel_size -1)*dilation, (kernel_size -1)*dilation], [0, 0]])
-
+      pad_tensor = tf.constant([[0, 0], [0, (kernel_size -1)*dilation], [0, 0]]) #pad for causality
       pad1 = tf.pad(inputs, pad_tensor, name='pad1')
       conv1 = layers.conv2d(pad1, out_channels, kernel_size, data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
@@ -275,19 +274,20 @@ class TCNModel(models.BaseModel):
       conv2 = layers.conv2d(pad2, out_channels, kernel_size, data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
       dropout2 = layers.dropout(conv2[:, :-(kernel_size -1)*dilation, :], 
-        keep_prob=keep_prob, is_training=is_training)
+        keep_prob=keep_prob, is_training=is_training).
 
       res = layers.conv2d(inputs, out_channels, 1) if inputs.shape[-1] != out_channels else inputs
       return tf.nn.relu(tf.add(dropout2, res))
 
     tcn_params = [[hidden_size, kernel_size, 2 ** i] for i in range(number_of_layers)]
-
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
-    print(model_input.shape)
+    
     print(tcn_out.shape)
+    fc_in = layers.flatten(tcn_out)
+    fc_out = layers.fully_connected(fc_in, vocab_size, tf.sigmoid, batch_norm, bn_params)
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
     return aggregated_model().create_model(
-        model_input=tcn_out,
+        model_input=fc_out,
         vocab_size=vocab_size,
         **unused_params)
