@@ -261,7 +261,7 @@ class TCNModel(models.BaseModel):
     
     num_inputs = model_input.shape[-1]
     
-    def TCNBlock(inputs, out_channels, kernel_size, dilation, padding='SAME', dropout=keep_prob, is_training=is_training):
+    def TCNBlock(inputs, out_channels, kernel_size, dilation, padding='SAME', dropout=keep_prob, is_training=is_training, **unused_params):
       bn_params = {'center':True, 'scale':True, 'is_training':is_training, 'scope':'tcn_bn'}
 
       conv1 = layers.convolution(inputs, out_channels, kernel_size, stride=1, padding=padding, rate=dilation, 
