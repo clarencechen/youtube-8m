@@ -22,6 +22,7 @@ import tensorflow as tf
 import model_utils as utils
 
 import tensorflow.contrib.slim as slim
+import tensorflow.contrib.layers as layers
 from tensorflow import flags
 
 FLAGS = flags.FLAGS
@@ -46,6 +47,10 @@ flags.DEFINE_string("video_level_classifier_model", "MoeModel",
                     "classifier layer")
 flags.DEFINE_integer("lstm_cells", 1024, "Number of LSTM cells.")
 flags.DEFINE_integer("lstm_layers", 2, "Number of LSTM layers.")
+flags.DEFINE_integer("tcn_layer_width", 1024, "Number of features per time step in TCN.")
+flags.DEFINE_integer("tcn_layers", 9, "Number of residual blocks in TCN.")
+flags.DEFINE_integer("tcn_kernel", 3, "Width of TCN kernel.")
+flags.DEFINE_integer("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
 
 class FrameLevelLogisticModel(models.BaseModel):
 
@@ -196,7 +201,7 @@ class DbofModel(models.BaseModel):
 
 class LstmModel(models.BaseModel):
 
-  def create_model(self, model_input, vocab_size, num_frames, **unused_params):
+  def create_model(self, model_input, vocab_size, num_frames, is_training=True, **unused_params):
     """Creates a model which uses a stack of LSTMs to represent the video.
 
     Args:
@@ -232,5 +237,55 @@ class LstmModel(models.BaseModel):
 
     return aggregated_model().create_model(
         model_input=state[-1].h,
+        vocab_size=vocab_size,
+        **unused_params)
+class TCNModel(models.BaseModel):
+
+  def create_model(self, model_input, vocab_size, is_training=True, **unused_params):
+    """Creates a model which uses a TCN with residual connections to represent the video.
+
+    Args:
+      model_input: A 'batch_size' x 'max_frames' x 'num_features' matrix of
+                   input features.
+      vocab_size: The number of classes in the dataset.
+
+    Returns:
+      A dictionary with a tensor containing the probability predictions of the
+      model in the 'predictions' key. The dimensions of the tensor are
+      'batch_size' x 'num_classes'.
+    """
+    number_of_layers = 9 or FLAGS.tcn_layers
+    kernel_size = 3 or FLAGS.tcn_kernel
+    hidden_size = 1024 or FLAGS.tcn_layer_width
+    keep_prob = 0.9 or 1 -FLAGS.tcn_dropout_prob
+    
+    num_inputs = model_input.shape[-1]
+    
+    def TCNBlock(inputs, out_channels, kernel_size, dilation, padding='SAME', dropout=keep_prob, is_training=is_training):
+      bn_params = {'center':True, 'scale':True, 'is_training':is_training, 'scope':'tcn_bn'}
+      
+      conv1 = layers.convolution(inputs, out_channels, kernel_size, stride=1, padding=padding, rate=dilation, 
+        normalizer_fn=layers.batch_norm, normalizer_params=bn_params, scope='conv1')
+      dropout1 = layers.dropout(conv1[:, :, :-(kernel_size -1)*dilation], 
+        keep_prob=keep_prob, is_training=is_training, scope='dropout1')
+
+      conv2 = layers.convolution(dropout1, out_channels, kernel_size, stride=1, padding=padding, rate=dilation, 
+        normalizer_fn=layers.batch_norm, normalizer_params=bn_params, scope='conv2')
+      dropout2 = layers.dropout(conv2[:, :, :-(kernel_size -1)*dilation], 
+        keep_prob=keep_prob, is_training=is_training, scope='dropout2')
+
+      res = layers.convolution(inputs, out_channels, 1, scope='conv_resid') if n_inputs != n_outputs else inputs
+      return tf.nn.relu(tf.add(dropout2, res))
+
+    out_channels, kernel_size, dilation = [hidden_size]*(number_of_layers -1) + [vocab_size], \
+     [kernel_size]*number_of_layers, \
+     [2 ** i for i in range(number_of_layers)]
+
+    fc_out = layers.stack(inputs, TCNBlock, list(zip(out_channels, kernel_size, dilation)))
+    
+    aggregated_model = getattr(video_level_models,
+                               FLAGS.video_level_classifier_model)
+    return aggregated_model().create_model(
+        model_input=fc_out,
         vocab_size=vocab_size,
         **unused_params)
