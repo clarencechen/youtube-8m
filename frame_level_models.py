@@ -274,14 +274,14 @@ class TCNModel(models.BaseModel):
       conv2 = layers.conv2d(pad2, out_channels, kernel_size, data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
       dropout2 = layers.dropout(conv2[:, :-(kernel_size -1)*dilation, :], 
-        keep_prob=keep_prob, is_training=is_training).
+        keep_prob=keep_prob, is_training=is_training)
 
       res = layers.conv2d(inputs, out_channels, 1) if inputs.shape[-1] != out_channels else inputs
       return tf.nn.relu(tf.add(dropout2, res))
 
     tcn_params = [[hidden_size, kernel_size, 2 ** i] for i in range(number_of_layers)]
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
-    
+
     print(tcn_out.shape)
     fc_in = layers.flatten(tcn_out)
     fc_out = layers.fully_connected(fc_in, vocab_size, tf.sigmoid, batch_norm, bn_params)
