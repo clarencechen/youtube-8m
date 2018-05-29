@@ -281,7 +281,7 @@ class TCNModel(models.BaseModel):
      [kernel_size]*number_of_layers, \
      [2 ** i for i in range(number_of_layers)]
 
-    fc_out = layers.stack(inputs, TCNBlock, list(zip(out_channels, kernel_size, dilation)))
+    fc_out = layers.stack(model_input, TCNBlock, list(zip(out_channels, kernel_size, dilation)))
     
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
