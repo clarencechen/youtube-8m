@@ -262,31 +262,29 @@ class TCNModel(models.BaseModel):
     num_inputs = model_input.shape[-1]
     
     def TCNBlock(inputs, out_channels, kernel_size, dilation, dropout=keep_prob, is_training=is_training, **unused_params):
-      bn_params = {'center':True, 'scale':True, 'is_training':is_training, 'scope':'tcn_bn'}
+      bn_params = {'center':True, 'scale':True, 'is_training':is_training}
       pad_tensor = tf.constant([[0, 0], [(kernel_size -1)*dilation, (kernel_size -1)*dilation], [0, 0]])
 
       pad1 = tf.pad(inputs, pad_tensor, name='pad1')
       conv1 = layers.conv2d(pad1, out_channels, kernel_size, data_format='NWC', stride=1, padding='VALID', rate=dilation, 
-        normalizer_fn=layers.batch_norm, normalizer_params=bn_params, scope='conv1')
+        normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
       dropout1 = layers.dropout(conv1[:, :-(kernel_size -1)*dilation, :], 
-        keep_prob=keep_prob, is_training=is_training, scope='dropout1')
-      print(dropout1.shape)
+        keep_prob=keep_prob, is_training=is_training)
       
       pad2 = tf.pad(dropout1, pad_tensor, name='pad2')
       conv2 = layers.conv2d(pad2, out_channels, kernel_size, data_format='NWC', stride=1, padding='VALID', rate=dilation, 
-        normalizer_fn=layers.batch_norm, normalizer_params=bn_params, scope='conv2')
+        normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
       dropout2 = layers.dropout(conv2[:, :-(kernel_size -1)*dilation, :], 
-        keep_prob=keep_prob, is_training=is_training, scope='dropout2')
-      print(dropout2.shape)
+        keep_prob=keep_prob, is_training=is_training)
 
-      res = layers.conv2d(inputs, out_channels, 1, scope='conv_resid') if inputs.shape[-1] != out_channels else inputs
+      res = layers.conv2d(inputs, out_channels, 1) if inputs.shape[-1] != out_channels else inputs
       return tf.nn.relu(tf.add(dropout2, res))
 
     out_channels, kernel_size, dilation = [hidden_size]*(number_of_layers -1) + [vocab_size], \
      [kernel_size]*number_of_layers, \
      [2 ** i for i in range(number_of_layers)]
 
-    fc_out = layers.stack(model_input, TCNBlock, list(zip(out_channels, kernel_size, dilation)), scope='tcn')
+    fc_out = layers.stack(model_input, TCNBlock, list(zip(out_channels, kernel_size, dilation)))
     
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
