@@ -280,9 +280,9 @@ class TCNModel(models.BaseModel):
       res = layers.conv2d(inputs, out_channels, 1) if inputs.shape[-1] != out_channels else inputs
       return tf.nn.relu(tf.add(dropout2, res))
 
-    out_channels, kernel_size, dilation = [[hidden_size, kernel_size, 2 ** i] for i in range(number_of_layers)]
+    tcn_params = [[hidden_size, kernel_size, 2 ** i] for i in range(number_of_layers)]
 
-    tcn_out = layers.stack(model_input, TCNBlock, list(zip(out_channels, kernel_size, dilation)))
+    tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
     print(tcn_out.shape)
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
