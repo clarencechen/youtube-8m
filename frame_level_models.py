@@ -262,7 +262,6 @@ class TCNModel(models.BaseModel):
     num_inputs = model_input.shape[-1]
     
     def TCNBlock(inputs, out_channels, kernel_size, dilation, dropout=keep_prob, is_training=is_training, **unused_params):
-      print(inputs.shape)
       bn_params = {'center':True, 'scale':True, 'is_training':is_training}
       pad_tensor = tf.constant([[0, 0], [(kernel_size -1)*dilation, (kernel_size -1)*dilation], [0, 0]])
 
