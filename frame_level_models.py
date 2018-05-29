@@ -274,7 +274,7 @@ class TCNModel(models.BaseModel):
       dropout2 = layers.dropout(conv2[:, :, :-(kernel_size -1)*dilation], 
         keep_prob=keep_prob, is_training=is_training, scope='dropout2')
 
-      res = layers.conv2d(inputs, out_channels, 1, scope='conv_resid') if n_inputs != n_outputs else inputs
+      res = layers.conv2d(inputs, out_channels, 1, scope='conv_resid') if inputs.shape[-1] != out_channels else inputs
       return tf.nn.relu(tf.add(dropout2, res))
 
     out_channels, kernel_size, dilation = [hidden_size]*(number_of_layers -1) + [vocab_size], \
