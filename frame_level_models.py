@@ -264,17 +264,17 @@ class TCNModel(models.BaseModel):
     def TCNBlock(inputs, out_channels, kernel_size, dilation, padding='SAME', dropout=keep_prob, is_training=is_training, **unused_params):
       bn_params = {'center':True, 'scale':True, 'is_training':is_training, 'scope':'tcn_bn'}
 
-      conv1 = layers.convolution(inputs, out_channels, kernel_size, stride=1, padding=padding, rate=dilation, 
+      conv1 = layers.conv2d(inputs, out_channels, kernel_size, stride=1, padding=padding, rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params, scope='conv1')
       dropout1 = layers.dropout(conv1[:, :, :-(kernel_size -1)*dilation], 
         keep_prob=keep_prob, is_training=is_training, scope='dropout1')
 
-      conv2 = layers.convolution(dropout1, out_channels, kernel_size, stride=1, padding=padding, rate=dilation, 
+      conv2 = layers.conv2d(dropout1, out_channels, kernel_size, stride=1, padding=padding, rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params, scope='conv2')
       dropout2 = layers.dropout(conv2[:, :, :-(kernel_size -1)*dilation], 
         keep_prob=keep_prob, is_training=is_training, scope='dropout2')
 
-      res = layers.convolution(inputs, out_channels, 1, scope='conv_resid') if n_inputs != n_outputs else inputs
+      res = layers.conv2d(inputs, out_channels, 1, scope='conv_resid') if n_inputs != n_outputs else inputs
       return tf.nn.relu(tf.add(dropout2, res))
 
     out_channels, kernel_size, dilation = [hidden_size]*(number_of_layers -1) + [vocab_size], \
