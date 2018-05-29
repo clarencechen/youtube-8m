@@ -266,14 +266,14 @@ class TCNModel(models.BaseModel):
       pad_tensor = tf.constant([[0, 0], [(kernel_size -1)*dilation, (kernel_size -1)*dilation], [0, 0]])
 
       pad1 = tf.pad(inputs, pad_tensor, name='pad1')
-      conv1 = layers.conv2d(pad1, out_channels, kernel_size, data_format='NWC' stride=1, padding='VALID', rate=dilation, 
+      conv1 = layers.conv2d(pad1, out_channels, kernel_size, data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params, scope='conv1')
       dropout1 = layers.dropout(conv1[:, :, :-(kernel_size -1)*dilation], 
         keep_prob=keep_prob, is_training=is_training, scope='dropout1')
       print(dropout1.shape)
       
       pad2 = tf.pad(dropout1, pad_tensor, name='pad2')
-      conv2 = layers.conv2d(pad2, out_channels, kernel_size, data_format='NWC' stride=1, padding='VALID', rate=dilation, 
+      conv2 = layers.conv2d(pad2, out_channels, kernel_size, data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params, scope='conv2')
       dropout2 = layers.dropout(conv2[:, :, :-(kernel_size -1)*dilation], 
         keep_prob=keep_prob, is_training=is_training, scope='dropout2')
