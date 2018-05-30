@@ -266,8 +266,7 @@ class TCNModel(models.BaseModel):
       conv1 = layers.conv2d(inputs, out_channels // (kernel_size +1), 1, 
         data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
-      dropout1 = layers.dropout(conv1[:, :-(kernel_size -1)*dilation, :], 
-        keep_prob=keep_prob, is_training=is_training)
+      dropout1 = layers.dropout(conv1, keep_prob=keep_prob, is_training=is_training)
       
       pad = tf.pad(dropout1, pad_tensor, name='pad')
       conv2 = layers.conv2d(pad, out_channels // (kernel_size +1), kernel_size, 
@@ -279,8 +278,7 @@ class TCNModel(models.BaseModel):
       conv3 = layers.conv2d(dropout2, out_channels, 1, 
         data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
-      dropout3 = layers.dropout(conv3[:, :-(kernel_size -1)*dilation, :], 
-        keep_prob=keep_prob, is_training=is_training)
+      dropout3 = layers.dropout(conv3, keep_prob=keep_prob, is_training=is_training)
 
       res = layers.conv2d(inputs, out_channels, 1) if inputs.shape[-1] != out_channels else inputs
       return tf.nn.relu(tf.add(dropout3, res))
