@@ -277,7 +277,7 @@ class TCNModel(models.BaseModel):
       dropout2 = layers.dropout(conv2[:, :-(kernel_size -1)*dilation, :], 
         keep_prob=keep_prob, is_training=is_training)
 
-      pad3 = tf.pad(dropout1, pad_tensor, name='pad3')
+      pad3 = tf.pad(dropout2, pad_tensor, name='pad3')
       conv3 = layers.conv2d(pad3, out_channels, 1, 
         data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
