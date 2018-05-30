@@ -84,7 +84,7 @@ if __name__ == "__main__":
   flags.DEFINE_float("learning_rate_decay_examples", 100000,
                      "Multiply current learning rate by learning_rate_decay "
                      "every learning_rate_decay_examples.")
-  flags.DEFINE_integer("num_epochs", 5,
+  flags.DEFINE_integer("num_epochs", 1,
                        "How many passes to make over the dataset before "
                        "halting training.")
   flags.DEFINE_integer("max_steps", None,
@@ -96,7 +96,7 @@ if __name__ == "__main__":
   # Other flags.
   flags.DEFINE_integer("num_readers", 8,
                        "How many threads to use for reading input files.")
-  flags.DEFINE_string("optimizer", "RMSPropOptimizer",
+  flags.DEFINE_string("optimizer", "AdamOptimizer",
                       "What optimizer class to use.")
   flags.DEFINE_float("clip_gradient_norm", 1.0, "Norm to clip gradients to.")
   flags.DEFINE_bool(
