@@ -48,8 +48,8 @@ flags.DEFINE_string("video_level_classifier_model", "MoeModel",
 flags.DEFINE_integer("lstm_cells", 1024, "Number of LSTM cells.")
 flags.DEFINE_integer("lstm_layers", 2, "Number of LSTM layers.")
 flags.DEFINE_integer("tcn_layer_width", 4096, "Number of features per time step in TCN.")
-flags.DEFINE_integer("tcn_layers", 6, "Number of residual blocks in TCN.")
-flags.DEFINE_integer("tcn_kernel", 5, "Width of TCN kernel.")
+flags.DEFINE_integer("tcn_layers", 5, "Number of residual blocks in TCN.")
+flags.DEFINE_integer("tcn_kernel", 7, "Width of TCN kernel.")
 flags.DEFINE_float("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
 
 class FrameLevelLogisticModel(models.BaseModel):
