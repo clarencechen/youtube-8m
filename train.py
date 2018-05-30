@@ -78,7 +78,7 @@ if __name__ == "__main__":
       "a weight of 1).")
   flags.DEFINE_float("base_learning_rate", 0.1,
                      "Which learning rate to start with.")
-  flags.DEFINE_float("learning_rate_decay", 0.8,
+  flags.DEFINE_float("learning_rate_decay", 0.95,
                      "Learning rate decay factor to be applied every "
                      "learning_rate_decay_examples.")
   flags.DEFINE_float("learning_rate_decay_examples", 100000,
@@ -96,7 +96,7 @@ if __name__ == "__main__":
   # Other flags.
   flags.DEFINE_integer("num_readers", 8,
                        "How many threads to use for reading input files.")
-  flags.DEFINE_string("optimizer", "AdamOptimizer",
+  flags.DEFINE_string("optimizer", "NadamOptimizer",
                       "What optimizer class to use.")
   flags.DEFINE_float("clip_gradient_norm", 1.0, "Norm to clip gradients to.")
   flags.DEFINE_bool(
