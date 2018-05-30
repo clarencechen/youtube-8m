@@ -73,10 +73,10 @@ if __name__ == "__main__":
   flags.DEFINE_string("label_loss", "CrossEntropyLoss",
                       "Which loss function to use for training the model.")
   flags.DEFINE_float(
-      "regularization_penalty", 1.0,
+      "regularization_penalty", 0.5,
       "How much weight to give to the regularization loss (the label loss has "
       "a weight of 1).")
-  flags.DEFINE_float("base_learning_rate", 0.1,
+  flags.DEFINE_float("base_learning_rate", 1.0,
                      "Which learning rate to start with.")
   flags.DEFINE_float("learning_rate_decay", 0.875,
                      "Learning rate decay factor to be applied every "
