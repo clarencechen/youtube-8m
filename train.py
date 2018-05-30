@@ -56,7 +56,7 @@ if __name__ == "__main__":
       "features. The model must also be set appropriately (i.e. to read 3D "
       "batches VS 4D batches.")
   flags.DEFINE_string(
-      "model", "MoeModel",
+      "model", "LogisticModel",
       "Which architecture to use for the model. Models are defined "
       "in models.py.")
   flags.DEFINE_bool(
@@ -76,7 +76,7 @@ if __name__ == "__main__":
       "regularization_penalty", 1.0,
       "How much weight to give to the regularization loss (the label loss has "
       "a weight of 1).")
-  flags.DEFINE_float("base_learning_rate", 1.0,
+  flags.DEFINE_float("base_learning_rate", 0.01,
                      "Which learning rate to start with.")
   flags.DEFINE_float("learning_rate_decay", 0.95,
                      "Learning rate decay factor to be applied every "
@@ -96,7 +96,7 @@ if __name__ == "__main__":
   # Other flags.
   flags.DEFINE_integer("num_readers", 8,
                        "How many threads to use for reading input files.")
-  flags.DEFINE_string("optimizer", "AdagradOptimizer",
+  flags.DEFINE_string("optimizer", "AdamOptimizer",
                       "What optimizer class to use.")
   flags.DEFINE_float("clip_gradient_norm", 1.0, "Norm to clip gradients to.")
   flags.DEFINE_bool(
