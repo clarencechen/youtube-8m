@@ -78,7 +78,7 @@ if __name__ == "__main__":
       "a weight of 1).")
   flags.DEFINE_float("base_learning_rate", 1.0,
                      "Which learning rate to start with.")
-  flags.DEFINE_float("learning_rate_decay", 0.875,
+  flags.DEFINE_float("learning_rate_decay", 0.95,
                      "Learning rate decay factor to be applied every "
                      "learning_rate_decay_examples.")
   flags.DEFINE_float("learning_rate_decay_examples", 100000,
