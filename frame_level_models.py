@@ -263,22 +263,20 @@ class TCNModel(models.BaseModel):
     
     def TCNBlock(inputs, out_channels, kernel_size, dilation, dropout=keep_prob, is_training=is_training, **unused_params):
       pad_tensor = tf.constant([[0, 0], [(kernel_size -1)*dilation, (kernel_size -1)*dilation], [0, 0]]) #pad for causality
-      pad1 = tf.pad(inputs, pad_tensor, name='pad1')
-      conv1 = layers.conv2d(pad1, out_channels // (kernel_size +1), 1, 
+      conv1 = layers.conv2d(inputs, out_channels // (kernel_size +1), 1, 
         data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
       dropout1 = layers.dropout(conv1[:, :-(kernel_size -1)*dilation, :], 
         keep_prob=keep_prob, is_training=is_training)
       
-      pad2 = tf.pad(dropout1, pad_tensor, name='pad2')
-      conv2 = layers.conv2d(pad2, out_channels // (kernel_size +1), kernel_size, 
+      pad = tf.pad(dropout1, pad_tensor, name='pad')
+      conv2 = layers.conv2d(pad, out_channels // (kernel_size +1), kernel_size, 
         data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
       dropout2 = layers.dropout(conv2[:, :-(kernel_size -1)*dilation, :], 
         keep_prob=keep_prob, is_training=is_training)
 
-      pad3 = tf.pad(dropout2, pad_tensor, name='pad3')
-      conv3 = layers.conv2d(pad3, out_channels, 1, 
+      conv3 = layers.conv2d(dropout2, out_channels, 1, 
         data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
       dropout3 = layers.dropout(conv3[:, :-(kernel_size -1)*dilation, :], 
