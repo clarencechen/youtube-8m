@@ -50,13 +50,13 @@ if __name__ == "__main__":
 
   # Model flags.
   flags.DEFINE_bool(
-      "frame_features", False,
+      "frame_features", True,
       "If set, then --train_data_pattern must be frame-level features. "
       "Otherwise, --train_data_pattern must be aggregated video-level "
       "features. The model must also be set appropriately (i.e. to read 3D "
       "batches VS 4D batches.")
   flags.DEFINE_string(
-      "model", "MoeModel",
+      "model", "TcnModel",
       "Which architecture to use for the model. Models are defined "
       "in models.py.")
   flags.DEFINE_bool(
@@ -68,7 +68,7 @@ if __name__ == "__main__":
   flags.DEFINE_integer("num_gpu", 1,
                        "The maximum number of GPU devices to use for training. "
                        "Flag only applies if GPUs are installed")
-  flags.DEFINE_integer("batch_size", 4096,
+  flags.DEFINE_integer("batch_size", 32,
                        "How many examples to process per batch for training.")
   flags.DEFINE_string("label_loss", "CrossEntropyLoss",
                       "Which loss function to use for training the model.")
@@ -76,12 +76,12 @@ if __name__ == "__main__":
       "regularization_penalty", 1.0,
       "How much weight to give to the regularization loss (the label loss has "
       "a weight of 1).")
-  flags.DEFINE_float("base_learning_rate", 0.5,
+  flags.DEFINE_float("base_learning_rate", 0.002,
                      "Which learning rate to start with.")
-  flags.DEFINE_float("learning_rate_decay", 0.9,
+  flags.DEFINE_float("learning_rate_decay", 0.95,
                      "Learning rate decay factor to be applied every "
                      "learning_rate_decay_examples.")
-  flags.DEFINE_float("learning_rate_decay_examples", 500000,
+  flags.DEFINE_float("learning_rate_decay_examples", 1000000,
                      "Multiply current learning rate by learning_rate_decay "
                      "every learning_rate_decay_examples.")
   flags.DEFINE_integer("num_epochs", 1,
