@@ -281,7 +281,7 @@ class TcnModel(models.BaseModel):
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
       dropout3 = layers.dropout(conv3, keep_prob=keep_prob, is_training=is_training)
 
-      res = layers.conv2d(inputs, out_channels, 1) if inputs.shape[-1] != out_channels else inputs
+      res = layers.conv2d(inputs, out_channels*2*(kernel_size -1), 1) if inputs.shape[-1] != out_channels*2*(kernel_size -1) else inputs
       return tf.nn.relu(tf.add(dropout3, res))
 
     tcn_params = [[hidden_size, kernel_size, 2 ** i] for i in range(number_of_layers)]
