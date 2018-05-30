@@ -47,9 +47,9 @@ flags.DEFINE_string("video_level_classifier_model", "MoeModel",
                     "classifier layer")
 flags.DEFINE_integer("lstm_cells", 1024, "Number of LSTM cells.")
 flags.DEFINE_integer("lstm_layers", 2, "Number of LSTM layers.")
-flags.DEFINE_integer("tcn_bottleneck", 256, "Number of channels in TCN bottleneck.")
-flags.DEFINE_integer("tcn_layers", 6, "Number of residual blocks in TCN.")
-flags.DEFINE_integer("tcn_kernel", 5, "Width of TCN kernel.")
+flags.DEFINE_integer("tcn_bottleneck", 512, "Number of channels in TCN bottleneck.")
+flags.DEFINE_integer("tcn_layers", 9, "Number of residual blocks in TCN.")
+flags.DEFINE_integer("tcn_kernel", 3, "Width of TCN kernel.")
 flags.DEFINE_float("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
 
 class FrameLevelLogisticModel(models.BaseModel):
@@ -286,10 +286,7 @@ class TcnModel(models.BaseModel):
 
     tcn_params = [[hidden_size, 2*hidden_size*(kernel_size -1), kernel_size, 2 ** i] for i in range(number_of_layers)]
     
-    tcn_in = layers.conv2d(model_input, 2*hidden_size*(kernel_size -1), 7, 
-        data_format='NWC', stride=2, padding='VALID', 
-        normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
-    tcn_out = layers.stack(tcn_in, TCNBlock, tcn_params)
+    tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
     fc_out = layers.fully_connected(tf.reduce_mean(tcn_out, -2), vocab_size, tf.sigmoid, layers.batch_norm, bn_params)
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
