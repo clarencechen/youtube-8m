@@ -47,9 +47,9 @@ flags.DEFINE_string("video_level_classifier_model", "MoeModel",
                     "classifier layer")
 flags.DEFINE_integer("lstm_cells", 1024, "Number of LSTM cells.")
 flags.DEFINE_integer("lstm_layers", 2, "Number of LSTM layers.")
-flags.DEFINE_integer("tcn_layer_width", 4096, "Number of features per time step in TCN.")
-flags.DEFINE_integer("tcn_layers", 5, "Number of residual blocks in TCN.")
-flags.DEFINE_integer("tcn_kernel", 7, "Width of TCN kernel.")
+flags.DEFINE_integer("tcn_layer_width", 1024, "Number of features per time step in TCN.")
+flags.DEFINE_integer("tcn_layers", 7, "Number of residual blocks in TCN.")
+flags.DEFINE_integer("tcn_kernel", 3, "Width of TCN kernel.")
 flags.DEFINE_float("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
 
 class FrameLevelLogisticModel(models.BaseModel):
@@ -256,26 +256,27 @@ class TcnModel(models.BaseModel):
     """
     number_of_layers = 9 or FLAGS.tcn_layers
     kernel_size = 3 or FLAGS.tcn_kernel
-    hidden_size = 4096 or FLAGS.tcn_layer_width
+    hidden_size = 1024 or FLAGS.tcn_layer_width
     keep_prob = 0.9 or 1 -FLAGS.tcn_dropout_prob
     
     bn_params = {'center':True, 'scale':True, 'is_training':is_training}
     
     def TCNBlock(inputs, out_channels, kernel_size, dilation, dropout=keep_prob, is_training=is_training, **unused_params):
       pad_tensor = tf.constant([[0, 0], [(kernel_size -1)*dilation, (kernel_size -1)*dilation], [0, 0]]) #pad for causality
-      conv1 = layers.conv2d(inputs, out_channels // (kernel_size +1), 1, 
+      
+      conv1 = layers.conv2d(inputs, out_channels, 1, 
         data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
       dropout1 = layers.dropout(conv1, keep_prob=keep_prob, is_training=is_training)
       
       pad = tf.pad(dropout1, pad_tensor, name='pad')
-      conv2 = layers.conv2d(pad, out_channels // (kernel_size +1), kernel_size, 
+      conv2 = layers.conv2d(pad, out_channels, kernel_size, 
         data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
       dropout2 = layers.dropout(conv2[:, :-(kernel_size -1)*dilation, :], 
         keep_prob=keep_prob, is_training=is_training)
 
-      conv3 = layers.conv2d(dropout2, out_channels, 1, 
+      conv3 = layers.conv2d(dropout2, out_channels*2*(kernel_size -1), 1, 
         data_format='NWC', stride=1, padding='VALID', rate=dilation, 
         normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
       dropout3 = layers.dropout(conv3, keep_prob=keep_prob, is_training=is_training)
@@ -284,7 +285,11 @@ class TcnModel(models.BaseModel):
       return tf.nn.relu(tf.add(dropout3, res))
 
     tcn_params = [[hidden_size, kernel_size, 2 ** i] for i in range(number_of_layers)]
-    tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
+    
+    tcn_in = layers.conv2d(model_input, hidden_size, 7, 
+        data_format='NWC', stride=2, padding='VALID', 
+        normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
+    tcn_out = layers.stack(tcn_in, TCNBlock, tcn_params)
     fc_out = layers.fully_connected(tf.reduce_mean(tcn_out, -2), vocab_size, tf.sigmoid, layers.batch_norm, bn_params)
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
