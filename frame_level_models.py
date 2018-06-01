@@ -47,7 +47,7 @@ flags.DEFINE_string("video_level_classifier_model", "MoeModel",
                     "classifier layer")
 flags.DEFINE_integer("lstm_cells", 1024, "Number of LSTM cells.")
 flags.DEFINE_integer("lstm_layers", 2, "Number of LSTM layers.")
-flags.DEFINE_integer("tcn_bottleneck", 512, "Number of channels in TCN bottleneck.")
+flags.DEFINE_integer("tcn_bottleneck", 1024, "Number of channels in TCN bottleneck.")
 flags.DEFINE_integer("tcn_layers", 9, "Number of residual blocks in TCN.")
 flags.DEFINE_integer("tcn_kernel", 3, "Width of TCN kernel.")
 flags.DEFINE_float("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
