@@ -260,7 +260,6 @@ class TcnModel(models.BaseModel):
     keep_prob = 0.9 or 1 -FLAGS.tcn_dropout_prob
     
     bn_params = {'center':True, 'scale':True, 'is_training':is_training}
-    
     def TCNBlock(inputs, hidden_channels, out_channels, kernel_size, dilation, dropout=keep_prob, is_training=is_training, **unused_params):
       # pad_tensor = tf.constant([[0, 0], [(kernel_size -1)*dilation, (kernel_size -1)*dilation], [0, 0]]) #pad for causality
       
@@ -283,9 +282,14 @@ class TcnModel(models.BaseModel):
       return tf.nn.relu(tf.add(dropout3, res))
 
     tcn_params = [[hidden_size, 2*hidden_size*(kernel_size -1), kernel_size, 2 ** i] for i in range(number_of_layers)]
-    
+    fc_params = [
+    [8192, tf.nn.relu, layers.batch_norm, bn_params], 
+    [4096, tf.nn.relu, layers.batch_norm, bn_params], 
+    [vocab_size, tf.sigmoid, layers.batch_norm, bn_params]]
+
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
-    fc_out = layers.fully_connected(tf.reduce_mean(tcn_out, -2), vocab_size, tf.sigmoid, layers.batch_norm, bn_params)
+    fc_out = layers.stack(tcn_out[:, 142:158, :], fully_connected, fc_params)
+
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
     return aggregated_model().create_model(
