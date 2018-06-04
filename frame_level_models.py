@@ -47,11 +47,10 @@ flags.DEFINE_string("video_level_classifier_model", "MoeModel",
                     "classifier layer")
 flags.DEFINE_integer("lstm_cells", 1024, "Number of LSTM cells.")
 flags.DEFINE_integer("lstm_layers", 2, "Number of LSTM layers.")
-flags.DEFINE_integer("tcn_channels", 256, "Number of channels in TCN residual layer in first period.")
-flags.DEFINE_integer("tcn_dilation", 8, "Base 2 log of receptive field in TCN.")
-flags.DEFINE_integer("tcn_periods", 2, "Number of periods for dilation pattern in TCN.")
+flags.DEFINE_integer("tcn_bottleneck", 1024, "Number of channels in TCN bottleneck.")
+flags.DEFINE_integer("tcn_layers", 9, "Number of residual blocks in TCN.")
 flags.DEFINE_integer("tcn_kernel", 3, "Width of TCN kernel.")
-flags.DEFINE_float("tcn_dropout_prob", 0.2, "Probability of dropout in training TCN.")
+flags.DEFINE_float("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
 
 class FrameLevelLogisticModel(models.BaseModel):
 
@@ -255,41 +254,37 @@ class TcnModel(models.BaseModel):
       model in the 'predictions' key. The dimensions of the tensor are
       'batch_size' x 'num_classes'.
     """
-    dilation_layers = 9 or FLAGS.tcn_dilation +1
-    dilation_periods = 2 or FLAGS.tcn_periods
+    number_of_layers = 9 or FLAGS.tcn_layers
     kernel_size = 3 or FLAGS.tcn_kernel
-    tcn_channels = 256 or FLAGS.tcn_channels
+    hidden_size = 256 or FLAGS.tcn_bottleneck
     keep_prob = 0.9 or 1 -FLAGS.tcn_dropout_prob
     
     bn_params = {'center':True, 'scale':True, 'is_training':is_training}
-    def TCNStack(input_stack, hidden_channels, kernel_size, dropout=keep_prob, is_training=is_training, **unused_params):
-      def TCNBlock(input_block, channels, kernel_size, dilation, **unused_params):
-        out_channels = channels*2*(kernel_size -1)
-        conv1 = layers.conv2d(input_block, channels, 1, 
-          data_format='NWC', stride=1, padding='SAME', rate=dilation, 
-          normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
-        dropout1 = layers.dropout(conv1, keep_prob=keep_prob, is_training=is_training)
-        
-        conv2 = layers.conv2d(conv1, channels, kernel_size, 
-          data_format='NWC', stride=1, padding='SAME', rate=dilation, 
-          normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
-        dropout2 = layers.dropout(conv2, keep_prob=keep_prob, is_training=is_training)
+    
+    def TCNBlock(inputs, hidden_channels, out_channels, kernel_size, dilation, dropout=keep_prob, is_training=is_training, **unused_params):
+      
+      conv1 = layers.conv2d(inputs, hidden_channels, 1, 
+        data_format='NWC', stride=1, padding='SAME', rate=dilation, 
+        normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
+      dropout1 = layers.dropout(conv1, keep_prob=keep_prob, is_training=is_training)
+      
+      conv2 = layers.conv2d(conv1, hidden_channels, kernel_size, 
+        data_format='NWC', stride=1, padding='SAME', rate=dilation, 
+        normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
+      dropout2 = layers.dropout(conv2, keep_prob=keep_prob, is_training=is_training)
 
-        conv3 = layers.conv2d(dropout2, out_channels, 1, 
-          data_format='NWC', stride=1, padding='SAME', rate=dilation, 
-          normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
-        dropout3 = layers.dropout(conv3, keep_prob=keep_prob, is_training=is_training)
+      conv3 = layers.conv2d(dropout2, out_channels, 1, 
+        data_format='NWC', stride=1, padding='SAME', rate=dilation, 
+        normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
+      dropout3 = layers.dropout(conv3, keep_prob=keep_prob, is_training=is_training)
 
-        res = layers.conv2d(input_block, out_channels, 1) if input_block.shape[-1] != out_channels else input_block
-        return tf.nn.relu(tf.add(dropout3, res))
-      block_params = [[hidden_channels, kernel_size, 2 ** k] for k in range(dilation_layers)]
-      block_out = layers.stack(input_stack, TCNBlock, block_params)
-      pool_out = tf.layers.average_pooling1d(block_out, pool_size=3, strides=1, padding='VALID')
-      return pool_out
+      res = layers.conv2d(inputs, out_channels, 1) if inputs.shape[-1] != out_channels else inputs
+      return tf.nn.relu(tf.add(dropout3, res))
 
-    stack_params = [[(2 ** i)*tcn_channels, kernel_size, keep_prob, is_training] for i in range(dilation_periods)]
-    fc_in = layers.stack(model_input, TCNStack, stack_params)
-    fc_out = layers.fully_connected(tf.reduce_mean(fc_in, 1), vocab_size, tf.sigmoid, layers.batch_norm, bn_params)
+    tcn_params = [[hidden_size, 2*hidden_size*(kernel_size -1), kernel_size, 2 ** i] for i in range(number_of_layers)]
+    
+    tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
+    fc_out = layers.fully_connected(tf.reduce_mean(tcn_out, 1), vocab_size, tf.sigmoid, layers.batch_norm, bn_params)
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
     return aggregated_model().create_model(
