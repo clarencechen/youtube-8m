@@ -284,7 +284,7 @@ class TcnModel(models.BaseModel):
         return tf.nn.relu(tf.add(dropout3, res))
       block_params = [[hidden_channels, kernel_size, 2 ** k] for k in range(dilation_layers)]
       block_out = layers.stack(input_stack, TCNBlock, block_params)
-      pool_out = tf.layers.average_pooling1d(tcn_out, pool_size=3, padding='VALID')
+      pool_out = tf.layers.average_pooling1d(block_out, pool_size=3, padding='VALID')
       return pool_out
 
     stack_params = [[(2 ** i)*tcn_channels, kernel_size, keep_prob, is_training] for i in range(dilation_periods)]
