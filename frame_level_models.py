@@ -288,7 +288,7 @@ class TcnModel(models.BaseModel):
     [vocab_size, tf.sigmoid, layers.batch_norm, bn_params]]
 
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
-    fc_out = layers.stack(tcn_out[:, 142:158, :], fully_connected, fc_params)
+    fc_out = layers.stack(tcn_out[:, 142:158, :], layers.fully_connected, fc_params)
 
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
