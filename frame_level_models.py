@@ -264,6 +264,7 @@ class TcnModel(models.BaseModel):
     bn_params = {'center':True, 'scale':True, 'is_training':is_training}
     def TCNStack(input_stack, hidden_channels, kernel_size, dropout=keep_prob, is_training=is_training, **unused_params):
       def TCNBlock(input_block, channels, kernel_size, dilation, **unused_params):
+        out_channels = channels*2*(kernel_size -1)
         conv1 = layers.conv2d(input_block, channels, 1, 
           data_format='NWC', stride=1, padding='SAME', rate=dilation, 
           normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
@@ -274,7 +275,7 @@ class TcnModel(models.BaseModel):
           normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
         dropout2 = layers.dropout(conv2, keep_prob=keep_prob, is_training=is_training)
 
-        conv3 = layers.conv2d(dropout2, channels*2*(kernel_size -1), 1, 
+        conv3 = layers.conv2d(dropout2, out_channels, 1, 
           data_format='NWC', stride=1, padding='SAME', rate=dilation, 
           normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
         dropout3 = layers.dropout(conv3, keep_prob=keep_prob, is_training=is_training)
