@@ -98,7 +98,7 @@ if __name__ == "__main__":
                        "How many threads to use for reading input files.")
   flags.DEFINE_string("optimizer", "AdamOptimizer",
                       "What optimizer class to use.")
-  flags.DEFINE_float("clip_gradient_norm", 1.0, "Norm to clip gradients to.")
+  flags.DEFINE_float("clip_gradient_norm", 2.0, "Norm to clip gradients to.")
   flags.DEFINE_bool(
       "log_device_placement", False,
       "Whether to write the device on which every op will run into the "
@@ -548,7 +548,7 @@ class Trainer(object):
     latest_checkpoint = tf.train.latest_checkpoint(train_dir)
     if not latest_checkpoint:
       logging.info("%s: No checkpoint file found. Building a new model.",
-                   task_as_string(self.task))
+-                   task_as_string(self.task))
       return None
 
     meta_filename = latest_checkpoint + ".meta"
