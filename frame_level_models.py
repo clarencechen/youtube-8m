@@ -50,7 +50,7 @@ flags.DEFINE_integer("lstm_layers", 2, "Number of LSTM layers.")
 flags.DEFINE_integer("tcn_bottleneck", 1024, "Number of channels in TCN bottleneck.")
 flags.DEFINE_integer("tcn_layers", 8, "Number of residual blocks in TCN.")
 flags.DEFINE_integer("tcn_kernel", 5, "Width of TCN kernel.")
-flags.DEFINE_float("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
+flags.DEFINE_float("tcn_dropout_prob", 0.2, "Probability of dropout in training TCN.")
 
 class FrameLevelLogisticModel(models.BaseModel):
 
@@ -258,7 +258,7 @@ class TcnModel(models.BaseModel):
     kernel_size = 3 or FLAGS.tcn_kernel
     hidden_size = 256 or FLAGS.tcn_bottleneck
     keep_prob = 0.9 or 1 -FLAGS.tcn_dropout_prob
-    
+    batch_size = FLAGS.batch_size
     bn_params = {'center':True, 'scale':True, 'is_training':is_training}
     
     def TCNBlock(inputs, hidden_channels, out_channels, kernel_size, dilation, dropout=keep_prob, is_training=is_training, **unused_params):
@@ -282,8 +282,9 @@ class TcnModel(models.BaseModel):
       return tf.nn.relu(tf.add(dropout3, res))
 
     tcn_params = [[hidden_size, 2*hidden_size*(kernel_size -1), kernel_size, 2 ** i] for i in range(number_of_layers)]
-    tcn_out = layers.stack(model_input, TCNBlock, tcn_params)[:, 142:158, :]
+    tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
 
+    fc_in = tf.reshape(tcn_out[:, 142:158, :], [batch_size, -1])
     fc_0 = layers.fully_connected(tcn_out, 8192, tf.nn.relu, layers.batch_norm, bn_params)
     fc_1 = layers.fully_connected(fc_0, 4096, tf.nn.relu, layers.batch_norm, bn_params)
     fc_out = layers.fully_connected(fc_1, vocab_size, tf.sigmoid, layers.batch_norm, bn_params)

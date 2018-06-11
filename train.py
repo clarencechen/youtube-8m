@@ -73,7 +73,7 @@ if __name__ == "__main__":
   flags.DEFINE_string("label_loss", "CrossEntropyLoss",
                       "Which loss function to use for training the model.")
   flags.DEFINE_float(
-      "regularization_penalty", 1.0,
+      "regularization_penalty", 0.1,
       "How much weight to give to the regularization loss (the label loss has "
       "a weight of 1).")
   flags.DEFINE_float("base_learning_rate", 0.0001,
@@ -98,7 +98,7 @@ if __name__ == "__main__":
                        "How many threads to use for reading input files.")
   flags.DEFINE_string("optimizer", "AdamOptimizer",
                       "What optimizer class to use.")
-  flags.DEFINE_float("clip_gradient_norm", 2.0, "Norm to clip gradients to.")
+  flags.DEFINE_float("clip_gradient_norm", 0.5, "Norm to clip gradients to.")
   flags.DEFINE_bool(
       "log_device_placement", False,
       "Whether to write the device on which every op will run into the "
