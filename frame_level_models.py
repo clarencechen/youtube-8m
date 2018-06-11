@@ -288,6 +288,7 @@ class TcnModel(models.BaseModel):
     fc_0 = layers.fully_connected(tcn_out, 8192, tf.nn.relu, layers.batch_norm, bn_params)
     fc_1 = layers.fully_connected(fc_0, 4096, tf.nn.relu, layers.batch_norm, bn_params)
     fc_out = layers.fully_connected(fc_1, vocab_size, tf.sigmoid, layers.batch_norm, bn_params)
+    print(fc_in.shape, fc_0.shape, fc_1.shape, fc_out.shape)
 
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
