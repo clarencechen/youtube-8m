@@ -283,8 +283,8 @@ class TcnModel(models.BaseModel):
 
     tcn_params = [[hidden_size, 2*hidden_size*(kernel_size -1), kernel_size, 2 ** i] for i in range(number_of_layers)]
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
-
-    fc_0 = layers.fully_connected(tcn_out[:, 142:158, :], 8192, tf.nn.relu, layers.batch_norm, bn_params)
+    fc_in = layers.flatten(tcn_out[:, 142:158, :])
+    fc_0 = layers.fully_connected(fc_in, 8192, tf.nn.relu, layers.batch_norm, bn_params)
     fc_1 = layers.fully_connected(fc_0, 4096, tf.nn.relu, layers.batch_norm, bn_params)
     fc_out = layers.fully_connected(fc_1, vocab_size, tf.sigmoid, layers.batch_norm, bn_params)
     print(fc_0.shape, fc_1.shape, fc_out.shape)
