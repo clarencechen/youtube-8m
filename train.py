@@ -78,10 +78,10 @@ if __name__ == "__main__":
       "a weight of 1).")
   flags.DEFINE_float("base_learning_rate", 0.0001,
                      "Which learning rate to start with.")
-  flags.DEFINE_float("learning_rate_decay", 0.95,
+  flags.DEFINE_float("learning_rate_decay", 0.9,
                      "Learning rate decay factor to be applied every "
                      "learning_rate_decay_examples.")
-  flags.DEFINE_float("learning_rate_decay_examples", 10000,
+  flags.DEFINE_float("learning_rate_decay_examples", 5000,
                      "Multiply current learning rate by learning_rate_decay "
                      "every learning_rate_decay_examples.")
   flags.DEFINE_integer("num_epochs", 1,
@@ -89,7 +89,7 @@ if __name__ == "__main__":
                        "halting training.")
   flags.DEFINE_integer("max_steps", None,
                        "The maximum number of iterations of the training loop.")
-  flags.DEFINE_integer("export_model_steps", 1000,
+  flags.DEFINE_integer("export_model_steps", 400,
                        "The period, in number of steps, with which the model "
                        "is exported for batch prediction.")
 
