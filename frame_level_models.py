@@ -255,7 +255,7 @@ class TcnModel(models.BaseModel):
       'batch_size' x 'num_classes'.
     """
     number_of_layers = FLAGS.tcn_layers 
-    kernel_size =  FLAGS.tcn_kernel 
+    kernel_size = FLAGS.tcn_kernel 
     hidden_size = FLAGS.tcn_bottleneck
     keep_prob = 1 -FLAGS.tcn_dropout_prob
     batch_size = FLAGS.batch_size
