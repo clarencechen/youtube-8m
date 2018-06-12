@@ -46,7 +46,7 @@ if __name__ == "__main__":
       "sequence feature as well as a 'labels' int64 context feature.")
 
   # Other flags.
-  flags.DEFINE_integer("batch_size", 64,
+  flags.DEFINE_integer("batch_size", 16384,
                        "How many examples to process per batch.")
   flags.DEFINE_integer("num_readers", 8,
                        "How many threads to use for reading input files.")
