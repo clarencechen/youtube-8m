@@ -254,10 +254,10 @@ class TcnModel(models.BaseModel):
       model in the 'predictions' key. The dimensions of the tensor are
       'batch_size' x 'num_classes'.
     """
-    number_of_layers = 9 or FLAGS.tcn_layers
-    kernel_size = 3 or FLAGS.tcn_kernel
-    hidden_size = 256 or FLAGS.tcn_bottleneck
-    keep_prob = 0.9 or 1 -FLAGS.tcn_dropout_prob
+    number_of_layers = FLAGS.tcn_layers 
+    kernel_size =  FLAGS.tcn_kernel 
+    hidden_size = FLAGS.tcn_bottleneck
+    keep_prob = 1 -FLAGS.tcn_dropout_prob
     batch_size = FLAGS.batch_size
     bn_params = {'center':True, 'scale':True, 'is_training':is_training}
     
