@@ -48,7 +48,7 @@ flags.DEFINE_string("video_level_classifier_model", "MoeModel",
 flags.DEFINE_integer("lstm_cells", 1024, "Number of LSTM cells.")
 flags.DEFINE_integer("lstm_layers", 2, "Number of LSTM layers.")
 flags.DEFINE_integer("tcn_bottleneck", 1024, "Number of channels in TCN bottleneck.")
-flags.DEFINE_integer("tcn_layers", 9, "Number of residual blocks in TCN.")
+flags.DEFINE_integer("tcn_layers", 5, "Number of residual blocks in TCN.")
 flags.DEFINE_integer("tcn_kernel", 3, "Width of TCN kernel.")
 flags.DEFINE_float("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
 
@@ -283,8 +283,9 @@ class TcnModel(models.BaseModel):
 
     tcn_params = [[hidden_size, 2*hidden_size*(kernel_size -1), kernel_size, 2 ** i] for i in range(number_of_layers)]
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
-    fc_in = layers.flatten(tcn_out[:, ::20, :])
-    fc_0 = layers.fully_connected(fc_in, 8192, tf.nn.relu, layers.batch_norm, bn_params)
+    fc_in = layers.flatten(tcn_out[:, ::32, :])
+    fc_1 = layers.fully_connected(fc_in, 8192, tf.nn.relu, layers.batch_norm, bn_params)
+    dropout3 = layers.dropout(fc_1, keep_prob=keep_prob, is_training=is_training)
     fc_out = layers.fully_connected(fc_1, vocab_size, tf.sigmoid, layers.batch_norm, bn_params)
 
     aggregated_model = getattr(video_level_models,
