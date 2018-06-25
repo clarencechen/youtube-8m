@@ -48,8 +48,8 @@ flags.DEFINE_string("video_level_classifier_model", "MoeModel",
 flags.DEFINE_integer("lstm_cells", 1024, "Number of LSTM cells.")
 flags.DEFINE_integer("lstm_layers", 2, "Number of LSTM layers.")
 flags.DEFINE_integer("tcn_bottleneck", 1024, "Number of channels in TCN bottleneck.")
-flags.DEFINE_integer("tcn_layers", 5, "Number of residual blocks in TCN.")
-flags.DEFINE_integer("tcn_kernel", 3, "Width of TCN kernel.")
+flags.DEFINE_integer("tcn_layers", 7, "Number of residual blocks in TCN.")
+flags.DEFINE_integer("tcn_kernel", 5, "Width of TCN kernel.")
 flags.DEFINE_float("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
 
 class FrameLevelLogisticModel(models.BaseModel):
@@ -254,43 +254,83 @@ class TcnModel(models.BaseModel):
       model in the 'predictions' key. The dimensions of the tensor are
       'batch_size' x 'num_classes'.
     """
-    number_of_layers = FLAGS.tcn_layers 
-    kernel_size = FLAGS.tcn_kernel 
-    hidden_size = FLAGS.tcn_bottleneck
-    keep_prob = 1 -FLAGS.tcn_dropout_prob
-    batch_size = FLAGS.batch_size
-    bn_params = {'center':True, 'scale':True, 'is_training':is_training}
+    self.number_of_layers = FLAGS.tcn_layers
+    self.kernel_size = FLAGS.tcn_kernel
+    self.keep_prob = 1 -FLAGS.tcn_dropout_prob
+    self.bn_params = {'center':True, 'scale':True, 'is_training':is_training}
     
-    def TCNBlock(inputs, hidden_channels, out_channels, kernel_size, dilation, dropout=keep_prob, is_training=is_training, **unused_params):
+    def TCNBlock(inputs, hidden_channels, out_channels, dilation, is_training=is_training, **unused_params):
       
       conv1 = layers.conv2d(inputs, hidden_channels, 1, 
         data_format='NWC', stride=1, padding='SAME', rate=dilation, 
-        normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
-      dropout1 = layers.dropout(conv1, keep_prob=keep_prob, is_training=is_training)
+        normalizer_fn=layers.batch_norm, normalizer_params=self.bn_params)
+      dropout1 = layers.dropout(conv1, keep_prob=self.keep_prob, is_training=is_training)
       
-      conv2 = layers.conv2d(conv1, hidden_channels, kernel_size, 
+      conv2 = layers.conv2d(conv1, hidden_channels, self.kernel_size, 
         data_format='NWC', stride=1, padding='SAME', rate=dilation, 
-        normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
-      dropout2 = layers.dropout(conv2, keep_prob=keep_prob, is_training=is_training)
+        normalizer_fn=layers.batch_norm, normalizer_params=self.bn_params)
+      dropout2 = layers.dropout(conv2, keep_prob=self.keep_prob, is_training=is_training)
 
       conv3 = layers.conv2d(dropout2, out_channels, 1, 
         data_format='NWC', stride=1, padding='SAME', rate=dilation, 
-        normalizer_fn=layers.batch_norm, normalizer_params=bn_params)
-      dropout3 = layers.dropout(conv3, keep_prob=keep_prob, is_training=is_training)
+        normalizer_fn=layers.batch_norm, normalizer_params=self.bn_params)
+      dropout3 = layers.dropout(conv3, keep_prob=self.keep_prob, is_training=is_training)
 
       res = layers.conv2d(inputs, out_channels, 1) if inputs.shape[-1] != out_channels else inputs
       return tf.nn.relu(tf.add(dropout3, res))
 
-    tcn_params = [[hidden_size, 2*hidden_size*(kernel_size -1), kernel_size, 2 ** i] for i in range(number_of_layers)]
+    hidden_size = [1152, 576, 288, 144, 72, 36, 18]
+    tcn_params = [[hidden_size[i], 2*hidden_size[i]*(self.kernel_size -1), 2 ** i] for i in range(self.number_of_layers)]
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
-    fc_in = layers.flatten(tcn_out[:, ::32, :])
-    fc_1 = layers.fully_connected(fc_in, 8192, tf.nn.relu, layers.batch_norm, bn_params)
-    dropout3 = layers.dropout(fc_1, keep_prob=keep_prob, is_training=is_training)
-    fc_out = layers.fully_connected(fc_1, vocab_size, tf.sigmoid, layers.batch_norm, bn_params)
+    #fc_1 = layers.fully_connected(tcn_out, 8192, tf.nn.relu, layers.batch_norm, self.bn_params)
+    #dropout4 = layers.dropout(fc_1, keep_prob=self.keep_prob, is_training=is_training)
+    fc_out = layers.fully_connected(tcn_out, vocab_size, tf.sigmoid, layers.batch_norm, self.bn_params)
 
     aggregated_model = getattr(video_level_models,
                                FLAGS.video_level_classifier_model)
     return aggregated_model().create_model(
-        model_input=fc_out,
+        model_input=tcn_out,
         vocab_size=vocab_size,
         **unused_params)
+
+#class AttnModel(models.BaseModel):
+
+ # def create_model(self, model_input, vocab_size, is_training=True, **unused_params):
+    """Creates a model which uses a TCN with residual connections to represent the video.
+
+    Args:
+      model_input: A 'batch_size' x 'max_frames' x 'num_features' matrix of
+                   input features.
+      vocab_size: The number of classes in the dataset.
+
+    Returns:
+      A dictionary with a tensor containing the probability predictions of the
+      model in the 'predictions' key. The dimensions of the tensor are
+      'batch_size' x 'num_classes'.
+    """
+  #  self.number_of_layers = FLAGS.attn_layers
+   # self.num_heads = FLAGS.attn_heads 
+    #self.dim_head = FLAGS.attn_head_size
+  #  self.keep_prob = 1 -FLAGS.tcn_dropout_prob
+   # self.bn_params = {'center':True, 'scale':True, 'is_training':is_training}
+    
+    #def AttnBlock(inputs, hidden_channels, out_channels, kernel_size, dilation, is_training=is_training, **unused_params):
+     # pass
+
+   # for layer in range(number_of_layers):
+    #    attn_out = AttnBlock(attn_out, training=is_training, scale=True)
+    #    lm_h = tf.reshape(h[:, :-1], [-1, vocab_size])
+    #    lm_logits = tf.matmul(lm_h, we, transpose_b=True)
+        #lm_losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=lm_logits, labels=tf.reshape(X[:, 1:, 0], [-1]))
+        #lm_losses = tf.reshape(lm_losses, [shape_list(X)[0], shape_list(X)[1]-1])
+        #lm_losses = tf.reduce_sum(lm_losses*M[:, 1:], 1)/tf.reduce_sum(M[:, 1:], 1)
+
+#    class_act = tf.reshape(attn_out, [-1, self.num_heads*self.dim_head])
+#    fc_out = layers.fully_connected(class_act, vocab_size, tf.sigmoid, layers.batch_norm, bn_params)
+
+#    aggregated_model = getattr(video_level_models,
+#                               FLAGS.video_level_classifier_model)
+#    return aggregated_model().create_model(
+#        model_input=fc_out,
+#        vocab_size=vocab_size,
+#        **unused_params)
