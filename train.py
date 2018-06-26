@@ -65,7 +65,7 @@ if __name__ == "__main__":
       " new model instance.")
 
   # Training flags.
-  flags.DEFINE_integer("num_gpu", 8,
+  flags.DEFINE_integer("num_gpu", 16,
                        "The maximum number of GPU devices to use for training. "
                        "Flag only applies if GPUs are installed")
   flags.DEFINE_integer("batch_size", 4096,
@@ -98,7 +98,7 @@ if __name__ == "__main__":
                        "How many threads to use for reading input files.")
   flags.DEFINE_string("optimizer", "AdamOptimizer",
                       "What optimizer class to use.")
-  flags.DEFINE_float("clip_gradient_norm", 1.0, "Norm to clip gradients to.")
+  flags.DEFINE_float("clip_gradient_norm", 0.5, "Norm to clip gradients to.")
   flags.DEFINE_bool(
       "log_device_placement", False,
       "Whether to write the device on which every op will run into the "
