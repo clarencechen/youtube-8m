@@ -56,7 +56,7 @@ if __name__ == "__main__":
       "features. The model must also be set appropriately (i.e. to read 3D "
       "batches VS 4D batches.")
   flags.DEFINE_string(
-      "model", "LogisticModel",
+      "model", "MoeModel",
       "Which architecture to use for the model. Models are defined "
       "in models.py.")
   flags.DEFINE_bool(
@@ -68,7 +68,7 @@ if __name__ == "__main__":
   flags.DEFINE_integer("num_gpu", 16,
                        "The maximum number of GPU devices to use for training. "
                        "Flag only applies if GPUs are installed")
-  flags.DEFINE_integer("batch_size", 32,
+  flags.DEFINE_integer("batch_size", 4096,
                        "How many examples to process per batch for training.")
   flags.DEFINE_string("label_loss", "CrossEntropyLoss",
                       "Which loss function to use for training the model.")
@@ -76,7 +76,7 @@ if __name__ == "__main__":
       "regularization_penalty", 1.0,
       "How much weight to give to the regularization loss (the label loss has "
       "a weight of 1).")
-  flags.DEFINE_float("base_learning_rate", 1.0,
+  flags.DEFINE_float("base_learning_rate", 0.001,
                      "Which learning rate to start with.")
   flags.DEFINE_float("learning_rate_decay", 0.95,
                      "Learning rate decay factor to be applied every "
