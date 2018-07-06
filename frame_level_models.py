@@ -259,7 +259,7 @@ class TcnModel(models.BaseModel):
     self.keep_prob = 1 -FLAGS.tcn_dropout_prob
     self.bn_params = {'center':True, 'scale':True, 'is_training':is_training}
     
-    def TCNBlock(inputs, hidden_channels, out_channels, dilation, is_training=is_training, **unused_params):
+    def TCNBlock(inputs, hidden_channels, out_channels, dilation, **unused_params):
       
       conv1 = layers.conv2d(inputs, hidden_channels, 1, 
         data_format='NWC', stride=1, padding='SAME', rate=dilation, 
@@ -277,12 +277,12 @@ class TcnModel(models.BaseModel):
       dropout3 = layers.dropout(conv3, keep_prob=self.keep_prob, is_training=is_training)
 
       res = layers.conv2d(inputs, out_channels, 1) if inputs.shape[-1] != out_channels else inputs
-      return tf.nn.relu(tf.add(dropout3, res))
+      return layers.layer_norm(tf.nn.relu(dropout3 + res), center=True, scale=True)
 
     hidden_size = [1024, 512, 256, 128, 64, 32, 16]
     tcn_params = [[hidden_size[i], 2*hidden_size[i]*(self.kernel_size -1), 2 ** i] for i in range(self.number_of_layers)]
     tcn_out = layers.stack(model_input, TCNBlock, tcn_params)
-    #fc_1 = layers.fully_connected(tcn_out, 8192, tf.nn.relu, layers.batch_norm, self.bn_params)
+    #fc_1 = layers.fully_connected(tcn_out, 8192, tf.nn.relu, layers.layer_norm, self.bn_params)
     #dropout4 = layers.dropout(fc_1, keep_prob=self.keep_prob, is_training=is_training)
     fc_out = layers.fully_connected(tcn_out, vocab_size, tf.sigmoid, layers.batch_norm, self.bn_params)
 
