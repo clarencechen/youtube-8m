@@ -44,9 +44,9 @@ if __name__ == "__main__":
       "features (i.e. tensorflow.SequenceExample), then set --reader_type "
       "format. The (Sequence)Examples are expected to have 'rgb' byte array "
       "sequence feature as well as a 'labels' int64 context feature.")
-  flags.DEFINE_string("feature_names", "mean_rgb", "Name of the feature "
+  flags.DEFINE_string("feature_names", "mean_rgb,mean_audio", "Name of the feature "
                       "to use for training.")
-  flags.DEFINE_string("feature_sizes", "1024", "Length of the feature vectors.")
+  flags.DEFINE_string("feature_sizes", "1024,128", "Length of the feature vectors.")
 
   # Model flags.
   flags.DEFINE_bool(
@@ -84,7 +84,7 @@ if __name__ == "__main__":
   flags.DEFINE_float("learning_rate_decay_examples", 1000000,
                      "Multiply current learning rate by learning_rate_decay "
                      "every learning_rate_decay_examples.")
-  flags.DEFINE_integer("num_epochs", 2,
+  flags.DEFINE_integer("num_epochs", 1,
                        "How many passes to make over the dataset before "
                        "halting training.")
   flags.DEFINE_integer("max_steps", None,

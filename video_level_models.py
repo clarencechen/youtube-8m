@@ -113,7 +113,7 @@ class OnePointAttn(models.BaseModel):
                    model_input,
                    vocab_size,
                    l2_penalty=1e-8,
-                   is_training,
+                   is_training=True,
                    **unused_params):
     """Creates a Mixture of (Logistic) Experts model.
 
