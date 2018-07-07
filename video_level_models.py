@@ -108,6 +108,7 @@ class MoeModel(models.BaseModel):
 
 class OnePointAttn(models.BaseModel):
   """A softmax over a mixture of logistic models (with L2 regularization)."""
+  self.ln_params = {'center':True, 'scale':True}
   def create_model(self,
                    model_input,
                    vocab_size,
@@ -132,7 +133,6 @@ class OnePointAttn(models.BaseModel):
       model in the 'predictions' key. The dimensions of the tensor are
       batch_size x num_classes.
     """
-    self.ln_params = {'center':True, 'scale':True}
     dim_attn = dim_attn or FLAGS.opa_dim_attn
     num_heads = num_heads or FLAGS.opa_num_heads
     num_features = 1024 +128
