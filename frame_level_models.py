@@ -47,10 +47,15 @@ flags.DEFINE_string("video_level_classifier_model", "MoeModel",
                     "classifier layer")
 flags.DEFINE_integer("lstm_cells", 1024, "Number of LSTM cells.")
 flags.DEFINE_integer("lstm_layers", 2, "Number of LSTM layers.")
+
 flags.DEFINE_integer("tcn_bottleneck", 1024, "Number of channels in TCN bottleneck.")
 flags.DEFINE_integer("tcn_layers", 7, "Number of residual blocks in TCN.")
 flags.DEFINE_integer("tcn_kernel", 5, "Width of TCN kernel.")
 flags.DEFINE_float("tcn_dropout_prob", 0.1, "Probability of dropout in training TCN.")
+
+flags.DEFINE_integer("attn_layers", 7, "Number of blocks in Transformer Attn model.")
+flags.DEFINE_integer("attn_heads", 5, "Number of heads in Transformer Multi-Head Attn model.")
+flags.DEFINE_float("attn_dropout_prob", 0.1, "Probability of dropout in training Transformer.")
 
 class FrameLevelLogisticModel(models.BaseModel):
 
@@ -293,9 +298,9 @@ class TcnModel(models.BaseModel):
         vocab_size=vocab_size,
         **unused_params)
 
-#class AttnModel(models.BaseModel):
+class AttnModel(models.BaseModel):
 
- # def create_model(self, model_input, vocab_size, is_training=True, **unused_params):
+  def create_model(self, model_input, vocab_size, l2_penalty=1e-8, is_training=True, **unused_params):
     """Creates a model which uses a TCN with residual connections to represent the video.
 
     Args:
@@ -308,29 +313,61 @@ class TcnModel(models.BaseModel):
       model in the 'predictions' key. The dimensions of the tensor are
       'batch_size' x 'num_classes'.
     """
-  #  self.number_of_layers = FLAGS.attn_layers
-   # self.num_heads = FLAGS.attn_heads 
-    #self.dim_head = FLAGS.attn_head_size
-  #  self.keep_prob = 1 -FLAGS.tcn_dropout_prob
-   # self.bn_params = {'center':True, 'scale':True, 'is_training':is_training}
+    self.num_frames = 300
+    self.num_features = 1152
+
+    self.num_layers = FLAGS.attn_layers
+    self.num_heads = FLAGS.attn_heads 
+    self.dim_head = int(self.num_features/self.num_heads)
     
-    #def AttnBlock(inputs, hidden_channels, out_channels, kernel_size, dilation, is_training=is_training, **unused_params):
-     # pass
+    self.keep_prob = 1 -FLAGS.attn_dropout_prob
+    self.ln_params = {'center':True, 'scale':True}
+    def AttnBlock(inputs, num_heads, dim_head, is_training):
 
-   # for layer in range(number_of_layers):
-    #    attn_out = AttnBlock(attn_out, training=is_training, scale=True)
-    #    lm_h = tf.reshape(h[:, :-1], [-1, vocab_size])
-    #    lm_logits = tf.matmul(lm_h, we, transpose_b=True)
-        #lm_losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=lm_logits, labels=tf.reshape(X[:, 1:, 0], [-1]))
-        #lm_losses = tf.reshape(lm_losses, [shape_list(X)[0], shape_list(X)[1]-1])
-        #lm_losses = tf.reduce_sum(lm_losses*M[:, 1:], 1)/tf.reduce_sum(M[:, 1:], 1)
+      values = tf.transpose(tf.reshape(
+        tf.layers.dense(model_input, dim_head * num_heads, activation=None, use_bias=False,
+          weights_regularizer=slim.l2_regularizer(l2_penalty), name="values"),
+        [-1, self.num_frames, num_heads, dim_head]), [0, 2, 1, 3])
 
-#    class_act = tf.reshape(attn_out, [-1, self.num_heads*self.dim_head])
-#    fc_out = layers.fully_connected(class_act, vocab_size, tf.sigmoid, layers.batch_norm, bn_params)
+      querys = tf.transpose(tf.reshape(
+          tf.layers.dense(model_input, dim_head * num_heads, activation=None,
+          weights_regularizer=slim.l2_regularizer(l2_penalty), name="querys"),
+        [-1, self.num_frames, num_heads, dim_head]), [0, 2, 1, 3])
 
-#    aggregated_model = getattr(video_level_models,
-#                               FLAGS.video_level_classifier_model)
-#    return aggregated_model().create_model(
-#        model_input=fc_out,
-#        vocab_size=vocab_size,
-#        **unused_params)
+      keys = tf.transpose(tf.reshape(
+        tf.layers.dense(model_input, dim_head * num_heads, activation=None, use_bias=False,
+          weights_regularizer=slim.l2_regularizer(l2_penalty), name="keys"),
+        [-1, self.num_frames, num_heads, dim_head]), [0, 2, 1, 3])
+      
+      # scaled dot-product attention in shape
+      # shape is [-1, num_heads, self.num_frames, self.num_frames]
+      attn_spatial_act = tf.nn.softmax(tf.matmul(querys, keys, transpose_b=True) / sqrt(dim_head), -1)
+      attn_spatial_dropout_act = layers.dropout(attn_spatial_act, keep_prob=self.keep_prob, is_training=is_training)
+
+      attention_concat_heads = tf.reshape(tf.transpose(
+        tf.matmul(attn_spatial_dropout_act, values), 
+        [0, 2, 1, 3]), [-1, self.num_frames, num_heads * dim_head])
+
+      attention_mixed_heads = tf.layers.dense(attention_combined_heads, dim_head * num_heads, activation=None, use_bias=False,
+        weights_regularizer=slim.l2_regularizer(l2_penalty), name="head_mixers")
+      attention_dropout_mixed_heads = layers.dropout(attention_mixed_heads, keep_prob=self.keep_prob, is_training=is_training)
+
+      attention_final_output = layers.layer_norm(model_input + attention_dropout_mixed_heads, **self.ln_params)
+
+      feedforward_1 = layers.conv2d(attention_final_output, 4 * num_heads * dim_head, 1, data_format='NWC', stride=1, name="ff_1")
+      feedforward_2 = layers.conv2d(feedforward_1, num_heads * dim_head, 1, data_format='NWC', stride=1, activation_fn=None, name="ff_2")
+      feedforward_dropout = layers.dropout(feedforward_2, keep_prob=self.keep_prob, is_training=is_training)
+
+      return layers.layer_norm(feedforward_dropout + attention_final_output, **self.ln_params)
+
+    attn_params = [[num_heads, dim_head, is_training] for _ in range(self.num_layers)]
+    attn_out = layers.stack(model_input, AttnBlock, attn_params)
+    #pre-flattens attn_out
+    class_probs = layers.fully_connected(class_act, vocab_size, tf.sigmoid, layers.layer_norm, ln_params)
+
+    aggregated_model = getattr(video_level_models,
+                               FLAGS.video_level_classifier_model)
+    return aggregated_model().create_model(
+        model_input=fc_out,
+        vocab_size=vocab_size,
+        **unused_params)
